@@ -223,9 +223,22 @@
             background: var(--gold);
             border-radius: 2px;
             box-shadow: 0 0 10px var(--gold-lt);
-            transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), background 0.2s, box-shadow 0.2s;
+            transition: background 0.2s, box-shadow 0.2s;
             transform: translateX(-50%);
             z-index: 4;
+            pointer-events: none;
+        }
+        #pitch-dot {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 14px; height: 14px; margin-top: -7px; margin-left: -7px;
+            border-radius: 50%;
+            background: var(--gold-lt);
+            box-shadow: 0 0 16px var(--gold-lt), 0 0 32px rgba(240,200,74,0.3);
+            transition: transform 0.08s cubic-bezier(0.4,0,0.2,1), background 0.15s, box-shadow 0.15s;
+            transform: translateX(0);
+            z-index: 5;
+            pointer-events: none;
         }
         .gauge-labels {
             display: flex;
@@ -574,6 +587,7 @@
             <div class="gauge-wrap">
                 <div class="gauge-track">
                     <div id="tuner-gauge"></div>
+                    <div id="pitch-dot"></div>
                 </div>
                 <div class="gauge-labels">
                     <span>&#9837; flat</span>
@@ -661,6 +675,7 @@
     const tunerCents = document.getElementById('tuner-cents');
     const tunerFreq = document.getElementById('tuner-freq');
     const tunerGauge = document.getElementById('tuner-gauge');
+    const pitchDot = document.getElementById('pitch-dot');
     const metroBpmDisplay = document.getElementById('metro-bpm-display');
     const metroBpmSlider = document.getElementById('metro-bpm-slider');
     const btnMetroPlay = document.getElementById('btn-metro-play');
@@ -721,7 +736,9 @@
         tunerNote.textContent = '--';
         tunerCents.textContent = '0 cents';
         tunerFreq.textContent = '0.00 Hz';
-        tunerGauge.style.transform = 'translateX(-50%)';
+        pitchDot.style.transform = 'translateX(0)';
+        pitchDot.style.background = '';
+        pitchDot.style.boxShadow = '';
         tunerGauge.style.background = '';
         tunerGauge.style.boxShadow = '';
         tuneBadge.className = 'tune-badge off-tune';
@@ -777,10 +794,14 @@
             tunerCents.textContent = `${cents > 0 ? '+' : ''}${cents} cents`;
             tunerFreq.textContent = `${smoothedFreq.toFixed(2)} Hz`;
             const offset = Math.max(-50, Math.min(50, cents));
-            tunerGauge.style.transform = `translateX(calc(-50% + ${offset * 2}px))`;
+            pitchDot.style.transform = `translateX(${offset * 2}px)`;
             const inTune = Math.abs(cents) < 5;
-            tunerGauge.style.background = inTune ? '#4a7c59' : '#d4a017';
-            tunerGauge.style.boxShadow  = inTune ? '0 0 16px #4a7c59' : '0 0 10px #f0c84a';
+            const dotColor = inTune ? '#4a7c59' : '#f0c84a';
+            const dotShadow = inTune ? '0 0 20px #4a7c59, 0 0 40px rgba(74,124,89,0.4)' : '0 0 16px #f0c84a, 0 0 32px rgba(240,200,74,0.3)';
+            pitchDot.style.background = dotColor;
+            pitchDot.style.boxShadow = dotShadow;
+            tunerGauge.style.background = dotColor;
+            tunerGauge.style.boxShadow  = inTune ? '0 0 12px #4a7c59' : '0 0 10px #f0c84a';
 
             // Badge + note colour
             if (inTune !== wasInTune) {
