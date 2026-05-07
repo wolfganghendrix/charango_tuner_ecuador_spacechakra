@@ -188,21 +188,44 @@
         .gauge-wrap { position: relative; margin: 20px 0; }
         .gauge-track {
             position: relative;
-            height: 8px;
-            border-radius: 4px;
+            height: 12px;
+            border-radius: 6px;
             background: linear-gradient(90deg, #8b2020 0%, #2a1608 42%, #2a1608 58%, #4a7c59 100%);
             border: 1px solid rgba(212,160,23,0.2);
-            overflow: hidden;
+            overflow: visible;
+        }
+        /* Centre target tick — the "perfect" marker */
+        .gauge-track::before {
+            content: '';
+            position: absolute;
+            top: -5px; left: 50%;
+            transform: translateX(-50%);
+            width: 2px; height: calc(100% + 10px);
+            background: rgba(240,200,74,0.5);
+            border-radius: 1px;
+            z-index: 2;
+        }
+        /* Triangle pointer above centre */
+        .gauge-track::after {
+            content: '';
+            position: absolute;
+            top: -8px; left: 50%;
+            transform: translateX(-50%);
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid rgba(240,200,74,0.6);
+            z-index: 3;
         }
         #tuner-gauge {
             position: absolute;
             top: 50%; left: 50%;
-            width: 3px; height: 140%; margin-top: -70%;
+            width: 4px; height: 200%; margin-top: -100%;
             background: var(--gold);
             border-radius: 2px;
             box-shadow: 0 0 10px var(--gold-lt);
             transition: transform 0.15s cubic-bezier(0.4,0,0.2,1), background 0.2s, box-shadow 0.2s;
             transform: translateX(-50%);
+            z-index: 4;
         }
         .gauge-labels {
             display: flex;
@@ -210,8 +233,61 @@
             font-family: 'Space Mono', monospace;
             font-size: 0.6rem;
             color: var(--cream-dim);
-            margin-top: 6px;
+            margin-top: 10px;
             padding: 0 4px;
+        }
+
+        /* In-tune status badge */
+        #tune-status {
+            text-align: center;
+            margin-top: 10px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tune-badge {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid;
+            transition: all 0.3s;
+        }
+        .tune-badge.in-tune {
+            color: #6dbd88;
+            border-color: #4a7c59;
+            background: rgba(74,124,89,0.15);
+            box-shadow: 0 0 14px rgba(74,124,89,0.35);
+            animation: badge-pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .tune-badge.off-tune {
+            color: var(--cream-dim);
+            border-color: rgba(212,160,23,0.2);
+            background: transparent;
+            box-shadow: none;
+        }
+        @keyframes badge-pop {
+            0%   { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1);    opacity: 1; }
+        }
+
+        /* Note turns green when in tune */
+        #tuner-note {
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        #tuner-note.in-tune {
+            color: #6dbd88;
+            text-shadow: 0 0 40px rgba(74,124,89,0.5), 0 0 80px rgba(74,124,89,0.2);
+        }
+
+        /* Card border flash green */
+        .card.in-tune {
+            border-color: rgba(74,124,89,0.6);
+            box-shadow: 0 0 24px rgba(74,124,89,0.15);
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
         #tuner-freq {
@@ -500,10 +576,13 @@
                     <div id="tuner-gauge"></div>
                 </div>
                 <div class="gauge-labels">
-                    <span>♭ flat</span>
-                    <span>in tune</span>
-                    <span>sharp ♯</span>
+                    <span>&#9837; flat</span>
+                    <span>center</span>
+                    <span>sharp &#9839;</span>
                 </div>
+            </div>
+            <div id="tune-status">
+                <span class="tune-badge off-tune" id="tune-badge">— listening —</span>
             </div>
             <div id="tuner-freq">0.00 Hz</div>
 
@@ -645,6 +724,11 @@
         tunerGauge.style.transform = 'translateX(-50%)';
         tunerGauge.style.background = '';
         tunerGauge.style.boxShadow = '';
+        tuneBadge.className = 'tune-badge off-tune';
+        tuneBadge.textContent = '— listening —';
+        tunerNote.classList.remove('in-tune');
+        tunerCard.classList.remove('in-tune');
+        wasInTune = false;
     }
 
     btnListen.onclick = () => isListening ? stopTuner() : startTuner();
@@ -677,6 +761,10 @@
         return sampleRate / T0;
     }
 
+    const tuneBadge = document.getElementById('tune-badge');
+    const tunerCard = document.querySelector('#section-tuner .card');
+    let wasInTune = false;
+
     function updateTuner() {
         if (!isListening) return;
         analyser.getFloatTimeDomainData(buffer);
@@ -692,7 +780,18 @@
             tunerGauge.style.transform = `translateX(calc(-50% + ${offset * 2}px))`;
             const inTune = Math.abs(cents) < 5;
             tunerGauge.style.background = inTune ? '#4a7c59' : '#d4a017';
-            tunerGauge.style.boxShadow  = inTune ? '0 0 12px #4a7c59' : '0 0 10px #f0c84a';
+            tunerGauge.style.boxShadow  = inTune ? '0 0 16px #4a7c59' : '0 0 10px #f0c84a';
+
+            // Badge + note colour
+            if (inTune !== wasInTune) {
+                wasInTune = inTune;
+                tuneBadge.className = 'tune-badge ' + (inTune ? 'in-tune' : 'off-tune');
+                tuneBadge.textContent = inTune ? '✓ Afinado' : (cents < 0 ? '▲ Sube un poco' : '▼ Baja un poco');
+                tunerNote.classList.toggle('in-tune', inTune);
+                tunerCard.classList.toggle('in-tune', inTune);
+            } else if (!inTune) {
+                tuneBadge.textContent = cents < 0 ? '▲ Sube un poco' : '▼ Baja un poco';
+            }
         }
         tunerRAF = requestAnimationFrame(updateTuner);
     }
