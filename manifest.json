@@ -1,0 +1,21 @@
+{
+  "name": "Charango Tuner & Metronome",
+  "short_name": "CharangoTuner",
+  "description": "A high-precision tuner and metronome for Charango players.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
